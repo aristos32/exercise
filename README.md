@@ -24,6 +24,7 @@ DB_PASSWORD=password
 
 # other vars
 API_URL=https://www.alphavantage.co/query
+ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```
 
 connect to the database from the host machine  
