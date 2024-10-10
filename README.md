@@ -19,6 +19,11 @@ DB_DATABASE=laravel
 DB_USERNAME=laravel
 DB_PASSWORD=password
 
+# redis
+REDIS_HOST=redis
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
 # other vars
 API_URL=https://www.alphavantage.co/query
 ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
@@ -36,7 +41,8 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```$ docker-compose exec app php artisan app:call-alpha-vantage-api```
 
 ### To view the application
-```http://127.0.0.1:8082/  ```
+```http://127.0.0.1:8082/```  
+```http://127.0.0.1:8082/redis-test```
 
 ### Documentation
 #### Architecture Decisions
@@ -47,3 +53,9 @@ every 1 minute). This leads us to use Laravel's Command for the logic, as well a
 We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel.
 
 All services needed will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql, to avoid conflicts with existing host services.
+
+### Useful commands
+- docker-compose config - Ensure that the docker-compose.yml file is correct
+- docker-compose exec redis redis-cli - access redis  
+-- KEYS * (see all keys)  
+-- GET key_name  

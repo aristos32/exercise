@@ -3,8 +3,8 @@ version: '3.8'
 services:
   app:
     build:
-      context: .  # Build context is the current directory
-      dockerfile: Dockerfile  # Specify the Dockerfile
+      context: . # Build context is the current directory
+      dockerfile: Dockerfile # Specify the Dockerfile
     container_name: laravel_app
     working_dir: /var/www/html
     volumes:
@@ -22,7 +22,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./my-laravel/:/var/www/html
-    entrypoint: ['composer']
+    entrypoint: [ 'composer' ]
 
   webserver:
     image: nginx:alpine
@@ -52,9 +52,18 @@ services:
     networks:
       - laravel
 
+  redis:
+    image: redis:alpine
+    container_name: laravel_redis
+    networks:
+      - laravel
+    ports:
+      - "6389:6379"
+
 volumes:
   dbdata:
   dbdata_new:
+
 
 networks:
   laravel:
