@@ -19,4 +19,6 @@ echo "<pre>";
 print_r($data);
 echo "</pre>";
 
+Log::debug('An informational message.');
+
 exit;
