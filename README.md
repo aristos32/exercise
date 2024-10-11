@@ -28,6 +28,9 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 - Install composer dependencies  
 ``` (main)$ docker-compose run --rm composer install ```
 
+- build and start all docker services
+``` docker-compose up -d --build```
+
 - start all docker services  
 ``` docker-compose up -d ```
 
