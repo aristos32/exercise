@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
+use Exception;
+use GuzzleHttp\Client;
 use App\Models\Quote;
-use Cache;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Cache;
 
 class CallAlphaVantageApi extends Command
 {
@@ -31,28 +32,49 @@ class CallAlphaVantageApi extends Command
     {
         $apiKey = config('services.alpha_vantage.api_key');
         $function = 'GLOBAL_QUOTE';
-        $stocks = config('alphaVantage.stocks');
+        $stocks = config('services.alpha_vantage.stocks');
 
         Log::debug('-------------START JOB PROCESSING-----------------');
 
-        // call api
         $client = new Client();
+
         foreach ($stocks as $stock) {
+
             $this->info('Fetching stock prices for ' . $stock);
             Log::debug('Fetching stock prices for ' . $stock);
-            $response = $client->get("https://www.alphavantage.co/query?function={$function}&symbol={$stock}&apikey={$apiKey}");
+
+            // handle network issues
+            try {
+                $response = $client->get("https://www.alphavantage.co/query?function={$function}&symbol={$stock}&apikey={$apiKey}");
+            } catch (Exception $ex) {
+                Log::error($ex->getMessage());
+
+                // stop command until next scheduled
+                return;
+            }
 
             if ($response->getStatusCode() == 200) {
+
                 $data = json_decode($response->getBody(), true);
-                $this->info('Stock price data fetched successfully');
-                // Process or store the $data
-                Log::debug("Data fetched successfully: " . json_encode($data));
+
+                // rate limit handling
+                if (isset($data['Information'])) {
+                    $this->error($data['Information']);
+                    Log::error($data['Information']);
+
+                    continue;
+                }
 
                 // check if data is valid
                 if (!isset($data['Global Quote']) || !isset($data['Global Quote']['01. symbol'])) {
                     $this->error('Failed to fetch stock prices');
+                    Log::error('Failed to fetch stock prices');
+
                     continue;
                 }
+
+                $this->debug('Stock price data fetched successfully');
+                Log::debug('Stock price data fetched successfully');
 
                 $quoteData = [
                     'symbol' => $data['Global Quote']['01. symbol'],
@@ -72,9 +94,11 @@ class CallAlphaVantageApi extends Command
 
                 // store data in redis cache
                 $cacheKey = 'stock:' . $quoteData['symbol'];
+
                 Cache::put($cacheKey, $quoteData, config('services.alpha_vantage.cache_duration_minutes'));
-                Log::debug("Data stored in Redis cache");
+
                 $this->info("Data stored in Redis cache");
+                Log::debug("Data stored in Redis cache");
 
             } else {
                 $this->error('Failed to fetch stock prices');
