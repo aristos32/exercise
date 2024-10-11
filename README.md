@@ -1,10 +1,7 @@
 ### Initial Setup
 
-- Set correct permissions  
-``` (main)$ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache ```  
-
-- Set correct ownership  
-``` (main)$ docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
+- Set correct permissions and ownership 
+``` (main)$ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
 
 - create .env file  
 ```cp my-laravel/.env.example my-laravel/.env```
@@ -40,6 +37,9 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 - Run command manually  
 ```$ docker-compose exec app php artisan app:call-alpha-vantage-api```
 
+- Clear config cache - in case .env variable are not accessible  
+```docker-compose exec app php artisan config:clear&&docker-compose exec app php artisan cache:clear```  
+
 ### To view the application
 ```http://127.0.0.1:8082/```  
 ```http://127.0.0.1:8082/redis-test```
@@ -59,3 +59,7 @@ All services needed will be dockerized, using a combination of Dockerfile and do
 - docker-compose exec redis redis-cli - access redis  
 -- KEYS * (see all keys)  
 -- GET key_name  
+- Check if Laravel is reading env variables  
+docker-compose exec app php artisan tinker  
+$ env('APP_NAME');  
+
