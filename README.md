@@ -1,8 +1,5 @@
 ### Initial Setup
 
-- Set correct permissions and ownership 
-``` (main)$ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
-
 - create .env file  
 ```cp my-laravel/.env.example my-laravel/.env```
 
@@ -28,6 +25,10 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 - Install composer dependencies  
 ``` (main)$ docker-compose run --rm composer install ```
 
+- Set correct permissions and ownership, if any write errors 
+``` (main)$ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
+
+
 - build and start all docker services
 ``` docker-compose up -d --build```
 
@@ -50,12 +51,12 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ### Documentation
 #### Architecture Decisions
 
+All services needed will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql than default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
+
 We are asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g:
 every 1 minute). This leads us to use Laravel's Command for the logic, as well as the kernel scheduler for the repetition every minute. For this reason I create a new command/CallAlphaVantageApi and updated the app/Console/Kernel.php to schedule your command
 
 We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel.
-
-All services needed will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql, to avoid conflicts with existing host services.
 
 ### Useful commands
 - docker-compose config - Ensure that the docker-compose.yml file is correct

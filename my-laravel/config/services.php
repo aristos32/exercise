@@ -37,6 +37,7 @@ return [
     'alpha_vantage' => [
         'api_key' => env('ALPHA_VANTAGE_API_KEY'),
         'api_url' => env('ALPHA_VANTAGE_API_URL'),
+        'cache_duration_minutes' => env('ALPHA_VANTAGE_CACHE_DURATION', 60 * 60),
     ],
 
 ];
