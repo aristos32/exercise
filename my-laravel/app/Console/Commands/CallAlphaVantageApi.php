@@ -30,10 +30,11 @@ class CallAlphaVantageApi extends Command
      */
     public function handle()
     {
-        $apiKey = config('services.alpha_vantage.api_key');
-        $function = 'GLOBAL_QUOTE';
+        $apiKey = config('services.alpha_vantage.api_key');       
         $stocks = config('services.alpha_vantage.stocks');
+        $function = 'GLOBAL_QUOTE';
 
+        $this->info('-------------START JOB PROCESSING-----------------');
         Log::debug('-------------START JOB PROCESSING-----------------');
 
         $client = new Client();
@@ -42,6 +43,8 @@ class CallAlphaVantageApi extends Command
 
             $this->info('Fetching stock prices for ' . $stock);
             Log::debug('Fetching stock prices for ' . $stock);
+
+            return;
 
             // handle network issues
             try {
@@ -92,10 +95,10 @@ class CallAlphaVantageApi extends Command
                 // store data in database
                 Quote::create($quoteData);
 
-                // store data in redis cache
+                // store latest data in redis cache
                 $cacheKey = 'stock:' . $quoteData['symbol'];
 
-                Cache::put($cacheKey, $quoteData, config('services.alpha_vantage.cache_duration_minutes'));
+                Cache::put($cacheKey, $quoteData, config('services.alpha_vantage.cache_duration'));
 
                 $this->info("Data stored in Redis cache");
                 Log::debug("Data stored in Redis cache");

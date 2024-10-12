@@ -17,24 +17,59 @@ DB_PASSWORD=password
 REDIS_HOST=redis
 REDIS_PASSWORD=null
 REDIS_PORT=6379
+REDIS_CACHE_DURATION=60
 
 # other vars
 API_URL=https://www.alphavantage.co/query
 ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```
 - Install composer dependencies  
-``` (main)$ docker-compose run --rm composer install ```
+``` $ docker-compose run --rm composer install ```
 
 - Set correct permissions and ownership, if any write errors 
-``` (main)$ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
+``` $ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
 
+- install Laravel Sanctum for api  
+```$ docker-compose exec app php artisan install:api```
 
 - build and start all docker services
-``` docker-compose up -d --build```
+```$ docker-compose up -d --build```
 
 - start all docker services  
-``` docker-compose up -d ```
+```$ docker-compose up -d ```
 
+- verify that all services are up  
+```$ docker-compose ps```
+
+- start the scheduler  
+```$ docker-compose exec app php artisan schedule:work```
+
+### Test that the application is running
+```http://127.0.0.1:8082/```  
+```http://127.0.0.1:8082/test```  
+```http://127.0.0.1:8082/redis-test```
+```$ curl http://127.0.0.1:8082/api/stock/IBM```
+
+
+### Documentation
+
+#### Dockerizition
+All services will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql than the default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
+
+#### Retrieve the data at regular intervals
+We are asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new command/CallAlphaVantageApi and used the command schedule in routes/console.php to run it in intervals. I think the command scheduler is a very nice high level alternative of the traditional linux cron jobs, and also the commands can be under source control, which will help us avoid mistakes on server setup.
+
+The ```/Console/Commands/CallAlphaVantageApi.php``` in performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urs, for http return status code, for any 'Information' in response which usually is about rate limits being reached, and for actual quote structure to be valid before doing any processing.
+
+#### Endpoint to fetch the latest stock price
+To get the latest stock price from the cache I implemented api /stock/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
+```curl http://127.0.0.1:8082/api/stock/IBM```
+
+We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel.
+
+For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
+
+### Useful commands for troubleshooting
 - Test-connect to the database from the host machine  
 ```mysql -h 127.0.0.1 -P 3308 -u laravel -p```
 
@@ -42,28 +77,21 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```$ docker-compose exec app php artisan app:call-alpha-vantage-api```
 
 - Clear config cache - in case .env variable are not accessible  
-```docker-compose exec app php artisan config:clear&&docker-compose exec app php artisan cache:clear```  
+```docker-compose exec app php artisan config:clear&&docker-compose exec app php artisan cache:clear``` 
 
-### To view the application
-```http://127.0.0.1:8082/```  
-```http://127.0.0.1:8082/redis-test```
+- Ensure that the docker-compose.yml file is correct  
+```docker-compose config```
 
-### Documentation
-#### Architecture Decisions
-
-All services needed will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql than default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
-
-We are asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g:
-every 1 minute). This leads us to use Laravel's Command for the logic, as well as the kernel scheduler for the repetition every minute. For this reason I create a new command/CallAlphaVantageApi and updated the app/Console/Kernel.php to schedule your command
-
-We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel.
-
-### Useful commands
-- docker-compose config - Ensure that the docker-compose.yml file is correct
-- docker-compose exec redis redis-cli - access redis  
+- access redis  
+```docker-compose exec redis redis-cli```  
 -- KEYS * (see all keys)  
 -- GET key_name  
-- Check if Laravel is reading env variables  
-docker-compose exec app php artisan tinker  
-$ env('APP_NAME');  
 
+- Check if Laravel is reading env variables  
+```docker-compose exec app php artisan tinker```  
+```$ env('APP_NAME');```
+
+- ```$ docker --version```  
+Docker version 26.1.4, build 5650f9b
+-  ```docker-compose --version```  
+docker-compose version 1.29.2, build unknown
