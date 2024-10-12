@@ -78,9 +78,17 @@ We are also asked to implement caching to store the latest stock price. We can i
 
 #### Testing - debugging
 For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
-Laravel has build-in support with PHPUnit. We will write both Unit tests and Feature tests for our application.
+Laravel has build-in support with PHPUnit. We will write both Unit tests and Feature tests for our application. We need to cover:
+1. unit tests
+2. feature tests
+3. database tests
+4. redis cache tests
+
 
 ### Useful commands for troubleshooting
+- Run all tests  
+```$ docker-compose exec app php artisan test```
+
 - Test-connect to the database from the host machine  
 ```mysql -h 127.0.0.1 -P 3308 -u laravel -p```
 
