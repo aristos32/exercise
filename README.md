@@ -20,7 +20,7 @@ REDIS_PORT=6379
 REDIS_CACHE_DURATION=60
 
 # other vars
-API_URL=https://www.alphavantage.co/query
+ALPHA_VANTAGE_API_URL=https://www.alphavantage.co/query
 ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```
 - Install composer dependencies  

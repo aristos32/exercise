@@ -3,11 +3,11 @@
 namespace App\Console\Commands;
 
 use Exception;
-use GuzzleHttp\Client;
 use App\Models\Quote;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class CallAlphaVantageApi extends Command
 {
@@ -30,6 +30,7 @@ class CallAlphaVantageApi extends Command
      */
     public function handle()
     {
+        $apiUrl = config('services.alpha_vantage.api_url');
         $apiKey = config('services.alpha_vantage.api_key');       
         $stocks = config('services.alpha_vantage.stocks');
         $redisCacheDuration = config('services.alpha_vantage.cache_duration');
@@ -40,8 +41,6 @@ class CallAlphaVantageApi extends Command
         $this->info('-------------START JOB PROCESSING-----------------');
         Log::debug('-------------START JOB PROCESSING-----------------');
 
-        $client = new Client();
-
         foreach ($stocks as $stock) {
 
             $this->info('Fetching stock prices for ' . $stock);
@@ -51,12 +50,12 @@ class CallAlphaVantageApi extends Command
 
             // handle network issues
             try {
-                $response = $client->get("https://www.alphavantage.co/query?function={$function}&symbol={$stock}&apikey={$apiKey}");
+                $response = Http::get("{$apiUrl}?function={$function}&symbol={$stock}&apikey={$apiKey}");
             } catch (Exception $ex) {
                 Log::error($ex->getMessage());
 
                 // stop command until next scheduled
-                return;
+                return 2;
             }
 
             if ($response->getStatusCode() == 200) {
@@ -109,6 +108,7 @@ class CallAlphaVantageApi extends Command
 
             } else {
                 $this->error('Failed to fetch stock prices');
+                return 1;
             }
         }
 
@@ -122,5 +122,6 @@ class CallAlphaVantageApi extends Command
 
         Log::debug("-------------END JOB PROCESSING-----------------\n\n");
 
+        return 0;
     }
 }

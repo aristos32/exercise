@@ -13,16 +13,15 @@ class CallAlphaVantageApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    
+    private $apiUrl = 'https://www.alphavantage.co/query';
     /**
      * Test successful fetching and storage of stock data.
      */
     public function test_fetch_and_store_stock_data()
-    {
-        // Mock the Alpha Vantage API response
-        Http::fake(function($request){
-            Log::info('Intercepted URL: ' . $request->url());
-            return Http::response([
+    {      
+
+        Http::fake([
+            "{$this->apiUrl}*" => Http::response([
                 'Global Quote' => [
                     '01. symbol' => 'AAPL',
                     '02. open' => '150.00',
@@ -35,7 +34,12 @@ class CallAlphaVantageApiTest extends TestCase
                     '09. change' => '2.00',
                     '10. change percent' => '1.34%',
                 ]
-            ], 200);
+            ], 200)
+        ]);
+
+        Http::fake(function ($request) {
+            Log::info('Intercepted URL: ' . $request->url());
+            return Http::response([ /* fake response */ ], 200);
         });
 
         // Call the command
@@ -56,45 +60,77 @@ class CallAlphaVantageApiTest extends TestCase
         $this->assertEquals(151.00, $cachedData['price']);
     }
 
-    // /**
-    //  * Test API failure handling.
-    //  */
-    // public function test_handle_api_failure()
-    // {
-    //     // Mock a failed API response
-    //     Http::fake([
-    //         'https://www.alphavantage.co/query*' => Http::response(null, 500)
-    //     ]);
+    /**
+     * Test API failure handling.
+     */
+    public function test_handle_api_failure()
+    {
+        // Mock a failed API response
+        Http::fake([
+            "{$this->apiUrl}*" => Http::response(null, 500)
+        ]);
 
-    //     // Call the command
-    //     $exitCode = Artisan::call('app:call-alpha-vantage-api');
+        // Call the command
+        $exitCode = Artisan::call('app:call-alpha-vantage-api');
 
-    //     // Assert that the command did not complete successfully
-    //     $this->assertEquals(1, $exitCode);
+        // Assert that the command did not complete successfully
+        $this->assertEquals(1, $exitCode);
 
-    //     // Assert that no data was stored in the database
-    //     $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);
-    // }
+        // Assert that no data was stored in the database
+        $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);
 
-    // /**
-    //  * Test rate limiting message from the API.
-    //  */
-    // public function test_handle_rate_limiting()
-    // {
-    //     // Mock the Alpha Vantage API response with a rate-limiting message
-    //     Http::fake([
-    //         'https://www.alphavantage.co/query*' => Http::response([
-    //             'Information' => 'The API call frequency is limited.'
-    //         ], 200)
-    //     ]);
+        // Assert that no data was cached in Redis
+        $this->assertNull(Cache::get('stock:AAPL'));
+    }
 
-    //     // Call the command
-    //     $exitCode = Artisan::call('app:call-alpha-vantage-api');
+    /**
+     * Test rate limiting message from the API.
+     */
+    public function test_handle_rate_limiting()
+    {
+        // Mock the Alpha Vantage API response with a rate-limiting message
+        Http::fake([
+            "{$this->apiUrl}*" => Http::response([
+                'Information' => 'The API call frequency is limited.'
+            ], 200)
+        ]);
 
-    //     // Assert that the command ran successfully
-    //     $this->assertEquals(0, $exitCode);
+        // Call the command
+        $exitCode = Artisan::call('app:call-alpha-vantage-api');
 
-    //     // Assert no data is stored in the database
-    //     $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);
-    // }
+        // Assert that the command ran successfully
+        $this->assertEquals(0, $exitCode);
+
+        // Assert no data is stored in the database
+        $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);
+
+        // Assert no data is cached in Redis
+        $this->assertNull(Cache::get('stock:AAPL'));
+    }
+
+    /**
+     * Test network issue handling.
+     */
+    public function test_handle_network_issue()
+    {
+        // Mock a network issue
+        Http::fake([
+            "{$this->apiUrl}*" => function () {
+                throw new \Exception('Network error');
+            }
+        ]);
+
+        // Call the command
+        $exitCode = Artisan::call('app:call-alpha-vantage-api');
+
+        // Assert that the command did not complete successfully
+        $this->assertEquals(2, $exitCode);
+
+        // Assert that no data was stored in the database
+        $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);
+
+        // Assert that no data was cached in Redis
+        $this->assertNull(Cache::get('stock:AAPL'));
+    }
+
 }
