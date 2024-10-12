@@ -65,6 +65,11 @@ The ```/Console/Commands/CallAlphaVantageApi.php``` in performing various error 
 To get the latest stock price from the cache I implemented api /stock/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
 ```curl http://127.0.0.1:8082/api/stock/IBM```
 
+#### Database Schema
+For storing the data I defined table Quotes. 
+Considering that we may have very frequent inserts of data, the table can grow very big.
+To optimize it for efficient retrieval of stock data, I have added an index on 'symbol' attribute.
+
 We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel.
 
 For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
