@@ -32,7 +32,10 @@ class CallAlphaVantageApi extends Command
     {
         $apiKey = config('services.alpha_vantage.api_key');       
         $stocks = config('services.alpha_vantage.stocks');
+        $redisCacheDuration = config('services.alpha_vantage.cache_duration');
+
         $function = 'GLOBAL_QUOTE';
+        $allStocks =[];
 
         $this->info('-------------START JOB PROCESSING-----------------');
         Log::debug('-------------START JOB PROCESSING-----------------');
@@ -44,7 +47,7 @@ class CallAlphaVantageApi extends Command
             $this->info('Fetching stock prices for ' . $stock);
             Log::debug('Fetching stock prices for ' . $stock);
 
-            return;
+            //return;
 
             // handle network issues
             try {
@@ -76,7 +79,7 @@ class CallAlphaVantageApi extends Command
                     continue;
                 }
 
-                $this->debug('Stock price data fetched successfully');
+                $this->info('Stock price data fetched successfully');
                 Log::debug('Stock price data fetched successfully');
 
                 $quoteData = [
@@ -90,15 +93,16 @@ class CallAlphaVantageApi extends Command
                     'previous_close' => (float) $data['Global Quote']['08. previous close'],
                     'change' => (float) $data['Global Quote']['09. change'],
                     'change_percent' => $data['Global Quote']['10. change percent'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
 
-                // store data in database
-                Quote::create($quoteData);
+                $allStocks[] = $quoteData;                
 
                 // store latest data in redis cache
                 $cacheKey = 'stock:' . $quoteData['symbol'];
 
-                Cache::put($cacheKey, $quoteData, config('services.alpha_vantage.cache_duration'));
+                Cache::put($cacheKey, $quoteData, $redisCacheDuration);
 
                 $this->info("Data stored in Redis cache");
                 Log::debug("Data stored in Redis cache");
@@ -106,6 +110,14 @@ class CallAlphaVantageApi extends Command
             } else {
                 $this->error('Failed to fetch stock prices');
             }
+        }
+
+        // batch store data in database
+        if(count($allStocks) > 0) {
+            $this->info('Storing data in database');
+            Log::debug('Storing data in database');
+            
+            Quote::insert($allStocks);
         }
 
         Log::debug("-------------END JOB PROCESSING-----------------\n\n");
