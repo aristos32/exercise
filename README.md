@@ -48,6 +48,7 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```http://127.0.0.1:8082/```  
 ```http://127.0.0.1:8082/test```  
 ```http://127.0.0.1:8082/redis-test```
+```http://127.0.0.1:8082/api/stock/report/AAPL```
 ```$ curl http://127.0.0.1:8082/api/stock/IBM```
 
 

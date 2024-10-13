@@ -8,4 +8,6 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/stock/{symbol}', [StockHandleController::class, 'getStock']);
+Route::get('/stock/{symbol}', [StockHandleController::class, 'getLatestStockPrice']);
+
+Route::get('/stock/report/{symbol}', [StockHandleController::class, 'getRealTimeStockReport']);
