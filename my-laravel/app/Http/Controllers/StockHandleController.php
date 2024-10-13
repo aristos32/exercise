@@ -45,13 +45,14 @@ class StockHandleController extends Controller
         return response()->json(['error' => 'Stock not found'], 404);
     }
 
+
     /**
      * Get real-time stock price and percentage change.
      *
      * @param string $symbol
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getRealTimeStockReport($symbol)
+    public function getRealTimeStockReportForSymbol($symbol)
     {
         // Try to retrieve stock data from cache - differnt key for real-time data
         $cacheKey = "stockRealTime:{$symbol}";
@@ -110,6 +111,30 @@ class StockHandleController extends Controller
                 'percentage_change' => $percentageChange,
                 'latest_trading_day' => $latestTradingDay,
             ]
+        ]);
+    }
+
+    /**
+     * Get real-time stock price and percentage change for all symbols
+     *
+     * @param string $symbol
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRealTimeStockReportAll()
+    {
+        // Get all unique symbols from the database
+        $symbols = Quote::select('symbol')->distinct()->pluck('symbol');
+
+        $stockReports = [];
+
+        foreach ($symbols as $symbol) {
+            $stockReport = $this->getRealTimeStockReportForSymbol($symbol);
+            $stockReports[] = $stockReport->original;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $stockReports
         ]);
     }
 }

@@ -10,4 +10,5 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/stock/{symbol}', [StockHandleController::class, 'getLatestStockPrice']);
 
-Route::get('/stock/report/{symbol}', [StockHandleController::class, 'getRealTimeStockReport']);
+Route::get('/stock/report/all', [StockHandleController::class, 'getRealTimeStockReportAll']);
+Route::get('/stock/report/symbol/{symbol}', [StockHandleController::class, 'getRealTimeStockReportForSymbol']);
