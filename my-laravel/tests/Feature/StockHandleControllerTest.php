@@ -170,47 +170,53 @@ class StockHandleControllerTest extends TestCase
     /**
      * Test getting real-time stock report for all symbols.
      */
-    // public function test_get_real_time_stock_report_all()
-    // {
-    //     $symbol1 = 'AAPL';
-    //     $symbol2 = 'IBM';
+    public function test_get_real_time_stock_report_all()
+    {
+        $symbol1 = 'AAPL';
+        $symbol2 = 'IBM';
 
-    //     $quote1 = Quote::factory()->create([
-    //         'symbol' => $symbol1,
-    //         'price' => '150',
-    //         'previous_close' => '149',
-    //         'latest_trading_day' => '2024-10-12',
-    //     ]);
+        $quote1 = Quote::factory()->create([
+            'symbol' => $symbol1,
+            'price' => '150',
+            'previous_close' => '149',
+            'latest_trading_day' => '2024-10-12',
+        ]);
 
-    //     $quote2 = Quote::factory()->create([
-    //         'symbol' => $symbol2,
-    //         'price' => '200',
-    //         'previous_close' => '190',
-    //         'latest_trading_day' => '2024-10-12',
-    //     ]);
+        $quote2 = Quote::factory()->create([
+            'symbol' => $symbol2,
+            'price' => '200',
+            'previous_close' => '190',
+            'latest_trading_day' => '2024-10-12',
+        ]);
 
-    //     $response = $this->get("/api/stock/report/all");
+        $response = $this->get("/api/stock/report/all");
 
-    //     $response->assertStatus(200)
-    //         ->assertJson([
-    //             'status' => 'success',
-    //             'data' => [
-    //                 [
-    //                     'symbol' => $symbol1,
-    //                     'price_current' => $quote1->price,
-    //                     'price_previous' => $quote1->previous_close,
-    //                     'percentage_change' => (($quote1->price - $quote1->previous_close) / $quote1->previous_close) * 100,
-    //                     'latest_trading_day' => $quote1->latest_trading_day->toISOString(),
-    //                 ],
-    //                 [
-    //                     'symbol' => $symbol2,
-    //                     'price_current' => $quote2->price,
-    //                     'price_previous' => $quote2->previous_close,
-    //                     'percentage_change' => (($quote2->price - $quote2->previous_close) / $quote2->previous_close) * 100,
-    //                     'latest_trading_day' => $quote2->latest_trading_day->toISOString(),
-    //                 ],
-    //             ]
-    //         ]);
-    // }
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    [
+                        'status' => 'success',
+                        "data" => [
+                            'symbol' => $symbol1,
+                            'price_current' => $quote1->price,
+                            'price_previous' => $quote1->previous_close,
+                            'percentage_change' => (($quote1->price - $quote1->previous_close) / $quote1->previous_close) * 100,
+                            'latest_trading_day' => $quote1->latest_trading_day->toISOString(),
+                        ]
+                    ],
+                    [
+                        'status' => 'success',
+                        "data" => [
+                            'symbol' => $symbol2,
+                            'price_current' => $quote2->price,
+                            'price_previous' => $quote2->previous_close,
+                            'percentage_change' => (($quote2->price - $quote2->previous_close) / $quote2->previous_close) * 100,
+                            'latest_trading_day' => $quote2->latest_trading_day->toISOString(),
+                        ]
+                    ],
+                ]
+            ]);
+    }
 
 }
