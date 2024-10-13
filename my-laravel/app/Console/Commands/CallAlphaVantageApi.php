@@ -62,6 +62,8 @@ class CallAlphaVantageApi extends Command
 
             if ($response->getStatusCode() == 200) {
 
+                Log::debug('Inside 200');
+
                 $data = json_decode($response->getBody(), true);
 
                 // rate limit handling
@@ -74,8 +76,8 @@ class CallAlphaVantageApi extends Command
 
                 // check if data is valid
                 if (!isset($data['Global Quote']) || !isset($data['Global Quote']['01. symbol'])) {
-                    $this->error('Failed to fetch stock prices');
-                    Log::error('Failed to fetch stock prices');
+                    $this->error('Invalid data received');
+                    Log::error('Invalid data received');
 
                     continue;
                 }
@@ -100,13 +102,20 @@ class CallAlphaVantageApi extends Command
 
                 $allStocks[$quoteData['symbol']] = $quoteData;
 
+                Cache::put("stock:{$quoteData['symbol']}", $quoteData, $redisCacheDuration);
+
+                $this->info("Data stored in Redis cache");
+                Log::debug("Data stored in Redis cache");
+
             } else {
-                $this->error('Failed to fetch stock prices');
+                $this->error('Api request failed, status code: ' . $response->getStatusCode());
+                Log::error('Api request failed, status code: ' . $response->getStatusCode());
                 return 1;
             }
         }
 
         // batch insert data
+        //var_dump($allStocks);
         if (count($allStocks) > 0) {
             // insert data in database
             Quote::insert($allStocks);
@@ -114,18 +123,6 @@ class CallAlphaVantageApi extends Command
             $this->info('Storing data in database');
             Log::debug('Storing data in database');
 
-            // Use Redis pipeline to perform batch insert
-            Redis::pipeline(function ($pipe) use ($allStocks) {
-                foreach ($allStocks as $key => $value) {
-                    $pipe->set("stock:{$key}", json_encode($value));
-                    $pipe->expire($key, 3600);
-                }
-            });
-
-            //Cache::put($cacheKey, $quoteData, $redisCacheDuration);
-
-            $this->info("Data stored in Redis cache");
-            Log::debug("Data stored in Redis cache");
         }
 
         Log::debug("-------------END JOB PROCESSING-----------------\n\n");

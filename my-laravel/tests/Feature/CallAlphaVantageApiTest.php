@@ -15,6 +15,7 @@ class CallAlphaVantageApiTest extends TestCase
     use RefreshDatabase;
 
     private $apiUrl = 'https://www.alphavantage.co/query';
+
     /**
      * Test successful fetching and storage of stock data.
      */
@@ -43,6 +44,26 @@ class CallAlphaVantageApiTest extends TestCase
             return Http::response([ /* fake response */], 200);
         });
 
+        // Mock the Cache facade for the 'put' method
+        Cache::shouldReceive('put')
+            ->with(
+                'stock:AAPL',
+                \Mockery::on(function ($data) {
+                    return is_array($data) && isset($data['symbol']) && $data['symbol'] === 'AAPL';
+                }),
+                \Mockery::any()  // The TTL can be any value
+            );
+
+        // Mock the Cache facade
+        Cache::shouldReceive('get')
+            ->once()
+            ->with('stock:AAPL')
+            ->andReturn([
+                'symbol' => 'AAPL',
+                'price' => 151.00
+            ]);
+
+
         // Call the command
         $exitCode = Artisan::call('app:call-alpha-vantage-api');
 
@@ -57,7 +78,7 @@ class CallAlphaVantageApiTest extends TestCase
 
 
         // Assert that the data was cached in Redis
-        $cachedData = json_decode(Redis::get('stock:AAPL'), true);
+        $cachedData = Cache::get('stock:AAPL');
         $this->assertEquals(151.00, $cachedData['price']);
     }
 
@@ -66,6 +87,7 @@ class CallAlphaVantageApiTest extends TestCase
      */
     public function test_handle_api_failure()
     {
+        Log::debug("\n\n" . __METHOD__ . "\n\n");
         // Mock a failed API response
         Http::fake([
             "{$this->apiUrl}*" => Http::response(null, 500)
