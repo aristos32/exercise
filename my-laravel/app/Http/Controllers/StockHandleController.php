@@ -80,11 +80,7 @@ class StockHandleController extends Controller
             $priceCurrent = $quote->price;
             $pricePrevious = $quote->previous_close;
 
-            if ($pricePrevious != 0) {
-                $percentageChange = (($priceCurrent - $pricePrevious) / $pricePrevious) * 100;
-            } else {
-                $percentageChange = 0;  // Avoid division by zero
-            }
+            $percentageChange = $this->calculatePercentageChange($priceCurrent, $pricePrevious);
 
             $latestTradingDay = $quote->latest_trading_day;
 
@@ -136,5 +132,16 @@ class StockHandleController extends Controller
             'status' => 'success',
             'data' => $stockReports
         ]);
+    }
+
+    /**
+     * calculate Percentage Change
+     * @param mixed $priceCurrent
+     * @param mixed $pricePrevious
+     * @return float|int
+     */
+    private function calculatePercentageChange($priceCurrent, $pricePrevious)
+    {
+        return ($pricePrevious != 0) ? (($priceCurrent - $pricePrevious) / $pricePrevious) * 100 : 0;
     }
 }

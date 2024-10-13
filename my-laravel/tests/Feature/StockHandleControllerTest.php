@@ -39,7 +39,7 @@ class StockHandleControllerTest extends TestCase
             ->with($cacheKey)
             ->andReturn($cachedData);
 
-        $response = $this->get("/api/stock/$symbol");
+        $response = $this->get("/api/stock/get/$symbol");
 
 
         $response->assertStatus(200)
@@ -69,7 +69,7 @@ class StockHandleControllerTest extends TestCase
             'change_percent' => '-3.75%',
         ]);
 
-        $response = $this->get("/api/stock/$symbol");
+        $response = $this->get("/api/stock/get/$symbol");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -109,7 +109,7 @@ class StockHandleControllerTest extends TestCase
             ->with($cacheKey)
             ->andReturn($cachedData);
 
-        $response = $this->get("/api/stock/report/symbol/$symbol");
+        $response = $this->get("/api/stock/report/$symbol");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -138,7 +138,7 @@ class StockHandleControllerTest extends TestCase
             'latest_trading_day' => '2024-10-12',
         ]);
 
-        $response = $this->get("/api/stock/report/symbol/$symbol");
+        $response = $this->get("/api/stock/report/$symbol");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -189,7 +189,7 @@ class StockHandleControllerTest extends TestCase
             'latest_trading_day' => '2024-10-12',
         ]);
 
-        $response = $this->get("/api/stock/report/all");
+        $response = $this->get("/api/stock/report");
 
         $response->assertStatus(200)
             ->assertJson([

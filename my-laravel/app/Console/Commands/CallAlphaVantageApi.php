@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 
 class CallAlphaVantageApi extends Command
 {
@@ -31,16 +32,17 @@ class CallAlphaVantageApi extends Command
     public function handle()
     {
         $apiUrl = config('services.alpha_vantage.api_url');
-        $apiKey = config('services.alpha_vantage.api_key');       
+        $apiKey = config('services.alpha_vantage.api_key');
         $stocks = config('services.alpha_vantage.stocks');
-        $redisCacheDuration = config('services.alpha_vantage.cache_duration');
+        $redisCacheDuration = config('services.alpha_vantage.cache_duration') ?? 60;
 
         $function = 'GLOBAL_QUOTE';
-        $allStocks =[];
+        $allStocks = [];
 
         $this->info('-------------START JOB PROCESSING-----------------');
         Log::debug('-------------START JOB PROCESSING-----------------');
 
+        // process each stock - do not insert yet
         foreach ($stocks as $stock) {
 
             $this->info('Fetching stock prices for ' . $stock);
@@ -67,7 +69,7 @@ class CallAlphaVantageApi extends Command
                     $this->error($data['Information']);
                     Log::error($data['Information']);
 
-                    continue;
+                    return 3;
                 }
 
                 // check if data is valid
@@ -96,15 +98,7 @@ class CallAlphaVantageApi extends Command
                     'updated_at' => now(),
                 ];
 
-                $allStocks[] = $quoteData;                
-
-                // store latest data in redis cache
-                $cacheKey = 'stock:' . $quoteData['symbol'];
-
-                Cache::put($cacheKey, $quoteData, $redisCacheDuration);
-
-                $this->info("Data stored in Redis cache");
-                Log::debug("Data stored in Redis cache");
+                $allStocks[$quoteData['symbol']] = $quoteData;
 
             } else {
                 $this->error('Failed to fetch stock prices');
@@ -112,12 +106,26 @@ class CallAlphaVantageApi extends Command
             }
         }
 
-        // batch store data in database
-        if(count($allStocks) > 0) {
+        // batch insert data
+        if (count($allStocks) > 0) {
+            // insert data in database
+            Quote::insert($allStocks);
+
             $this->info('Storing data in database');
             Log::debug('Storing data in database');
-            
-            Quote::insert($allStocks);
+
+            // Use Redis pipeline to perform batch insert
+            Redis::pipeline(function ($pipe) use ($allStocks) {
+                foreach ($allStocks as $key => $value) {
+                    $pipe->set("stock:{$key}", json_encode($value));
+                    $pipe->expire($key, 3600);
+                }
+            });
+
+            //Cache::put($cacheKey, $quoteData, $redisCacheDuration);
+
+            $this->info("Data stored in Redis cache");
+            Log::debug("Data stored in Redis cache");
         }
 
         Log::debug("-------------END JOB PROCESSING-----------------\n\n");

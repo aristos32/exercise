@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log; // Add this line
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Redis;
 
 class CallAlphaVantageApiTest extends TestCase
 {
@@ -56,7 +57,7 @@ class CallAlphaVantageApiTest extends TestCase
 
 
         // Assert that the data was cached in Redis
-        $cachedData = Cache::get('stock:AAPL');
+        $cachedData = json_decode(Redis::get('stock:AAPL'), true);
         $this->assertEquals(151.00, $cachedData['price']);
     }
 
@@ -99,7 +100,7 @@ class CallAlphaVantageApiTest extends TestCase
         $exitCode = Artisan::call('app:call-alpha-vantage-api');
 
         // Assert that the command ran successfully
-        $this->assertEquals(0, $exitCode);
+        $this->assertEquals(3, $exitCode);
 
         // Assert no data is stored in the database
         $this->assertDatabaseMissing('quotes', ['symbol' => 'AAPL']);

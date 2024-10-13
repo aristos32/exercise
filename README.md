@@ -48,8 +48,9 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```http://127.0.0.1:8082/```  
 ```http://127.0.0.1:8082/test```  
 ```http://127.0.0.1:8082/redis-test```
-```http://127.0.0.1:8082/api/stock/report/symbol/AAPL```
-```http://127.0.0.1:8082/api/stock/report/all```
+```http://127.0.0.1:8082/api/stock/get/AAPL```
+```http://127.0.0.1:8082/api/stock/report/AAPL```
+```http://127.0.0.1:8082/api/stock/report```
 ```$ curl http://127.0.0.1:8082/api/stock/IBM```
 
 
@@ -64,8 +65,10 @@ We are asked to implement an automated mechanism to fetch the stock price data a
 The ```/Console/Commands/CallAlphaVantageApi.php``` in performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urs, for http return status code, for any 'Information' in response which usually is about rate limits being reached, and for actual quote structure to be valid before doing any processing.
 
 #### Endpoint to fetch the latest stock price
-To get the latest stock price from the cache I implemented api /stock/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
-```curl http://127.0.0.1:8082/api/stock/IBM```
+This is the quote as we received it from the AlphaVantage Api, without any processing yet.
+To get the latest stock price from the cache I implemented api /stock/get/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
+```curl http://127.0.0.1:8082/api/stock/get/IBM``` OR  
+```http://127.0.0.1:8082/api/stock/get/AAPL```
 
 #### Database Design
 For storing the data I defined table Quotes. 
@@ -80,11 +83,12 @@ We are also asked to implement caching to store the latest stock price. We can i
 
 #### Testing - debugging
 For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
-Laravel has build-in support with PHPUnit. We will write both Unit tests and Feature tests for our application. We need to cover:
-1. unit tests
-2. feature tests
-3. database tests
-4. redis cache tests
+Laravel has build-in support with PHPUnit. We will write both Unit tests and Feature tests for our application. Testing coverage included:
+1. manual testing during development
+2. unit tests added in tests/unit
+3. feature tests added in tests/
+4. database tests are tested as part of feature testing
+5. redis cache tests are tested as part of feature testing
 
 
 ### Useful commands for troubleshooting
