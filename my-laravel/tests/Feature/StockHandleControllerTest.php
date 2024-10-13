@@ -16,7 +16,7 @@ class StockHandleControllerTest extends TestCase
     /**
      * Test getting stock data from cache.
      */
-    public function test_get_stock_from_cache()
+    public function test_get_latest_stock_from_cache()
     {
         $symbol = 'AAPL';
         $cacheKey = "stock:$symbol";
@@ -53,7 +53,7 @@ class StockHandleControllerTest extends TestCase
     /**
      * Test getting stock data from the database.
      */
-    public function test_get_stock_from_database()
+    public function test_get_latest_stock_from_database()
     {
         $symbol = 'IBM';
         $cacheKey = "stock:$symbol";
@@ -88,5 +88,83 @@ class StockHandleControllerTest extends TestCase
         $this->assertEquals($quoteArray, $cachedData);
     }
 
+
+    /**
+     * Test getting real-time stock report from cache.
+     */
+    public function test_get_real_time_stock_report_from_cache()
+    {
+        $symbol = 'AAPL';
+        $cacheKey = "stockRealTime:$symbol";
+        $cachedData = [
+            'price_current' => 150.00,
+            'price_previous' => 149.00,
+            'percentage_change' => 1.34,
+            'latest_trading_day' => '2024-10-12',
+        ];
+
+        // Mock the cache to return the cached data
+        Cache::shouldReceive('get')
+            ->once()
+            ->with($cacheKey)
+            ->andReturn($cachedData);
+
+        $response = $this->get("/api/stock/report/$symbol");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    'symbol' => $symbol,
+                    'price_current' => $cachedData['price_current'],
+                    'price_previous' => $cachedData['price_previous'],
+                    'percentage_change' => $cachedData['percentage_change'],
+                    'latest_trading_day' => $cachedData['latest_trading_day'],
+                ]
+            ]);
+    }
+
+    /**
+     * Test getting real-time stock report from the database.
+     */
+    public function test_get_real_time_stock_report_from_database()
+    {
+        $symbol = 'AAPL';
+        $cacheKey = "stockRealTime:$symbol";
+        $quote = Quote::factory()->create([
+            'symbol' => $symbol,
+            'price' => '150',
+            'previous_close' => '149',
+            'latest_trading_day' => '2024-10-12',
+        ]);
+
+        $response = $this->get("/api/stock/report/$symbol");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    'symbol' => $symbol,
+                    'price_current' => $quote->price,
+                    'price_previous' => $quote->previous_close,
+                    'percentage_change' => (($quote->price - $quote->previous_close) / $quote->previous_close) * 100,
+                    'latest_trading_day' => $quote->latest_trading_day->toISOString(),
+                ]
+            ]);
+
+        // Assert that the data is stored in the cache
+        $cachedData = Cache::get($cacheKey);
+
+        // Format both dates for consistency
+        $formattedLatestTradingDay = date('Y-m-d', strtotime($quote->latest_trading_day));
+        $cachedData['latest_trading_day'] = date('Y-m-d', strtotime($cachedData['latest_trading_day']));
+
+        $this->assertEquals($cachedData, [
+            'price_current' => $quote->price,
+            'price_previous' => $quote->previous_close,
+            'percentage_change' => (($quote->price - $quote->previous_close) / $quote->previous_close) * 100,
+            'latest_trading_day' => $formattedLatestTradingDay,
+        ]);
+    }
 
 }

@@ -104,11 +104,11 @@ class StockHandleController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'symbol' => $quote->symbol,
+                'symbol' => $symbol,
                 'price_current' => $priceCurrent,
                 'price_previous' => $pricePrevious,
                 'percentage_change' => $percentageChange,
-                'latest_trading_day' => $quote->latest_trading_day,
+                'latest_trading_day' => $latestTradingDay,
             ]
         ]);
     }
