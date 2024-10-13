@@ -21,4 +21,18 @@ class Quote extends Model
         'change',
         'change_percent',
     ];
+
+    protected $casts = [
+        'price' => 'string',
+        'open' => 'string',
+        'high' => 'string',
+        'low' => 'string',
+        'volume' => 'integer',
+        'latest_trading_day' => 'date',
+        'previous_close' => 'string',
+        'change' => 'string',
+        'change_percent' => 'string',
+        'created_at' => 'datetime:Y-m-d H:i:s',
+        'updated_at' => 'datetime:Y-m-d H:i:s',
+    ];
 }
