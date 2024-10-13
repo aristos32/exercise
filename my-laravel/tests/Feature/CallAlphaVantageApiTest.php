@@ -18,7 +18,7 @@ class CallAlphaVantageApiTest extends TestCase
      * Test successful fetching and storage of stock data.
      */
     public function test_fetch_and_store_stock_data()
-    {      
+    {
 
         Http::fake([
             "{$this->apiUrl}*" => Http::response([
@@ -39,7 +39,7 @@ class CallAlphaVantageApiTest extends TestCase
 
         Http::fake(function ($request) {
             Log::info('Intercepted URL: ' . $request->url());
-            return Http::response([ /* fake response */ ], 200);
+            return Http::response([ /* fake response */], 200);
         });
 
         // Call the command
@@ -53,7 +53,7 @@ class CallAlphaVantageApiTest extends TestCase
             'symbol' => 'AAPL',
             'price' => 151.00
         ]);
-        
+
 
         // Assert that the data was cached in Redis
         $cachedData = Cache::get('stock:AAPL');

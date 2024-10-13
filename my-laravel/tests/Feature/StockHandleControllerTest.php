@@ -59,13 +59,13 @@ class StockHandleControllerTest extends TestCase
         $cacheKey = "stock:$symbol";
         $quote = Quote::factory()->create([
             'symbol' => $symbol,
-            'price' => '151.0000',
-            'open' => '189.5200',
-            'high' => '186.6800',
-            'low' => '198.0100',
+            'price' => '151',
+            'open' => '189.52',
+            'high' => '186.68',
+            'low' => '198.01',
             'latest_trading_day' => '2024-10-12',
-            'previous_close' => '111.8400',
-            'change' => '-8.4100',
+            'previous_close' => '111.84',
+            'change' => '-8.41',
             'change_percent' => '-3.75%',
         ]);
 
@@ -88,34 +88,5 @@ class StockHandleControllerTest extends TestCase
         $this->assertEquals($quoteArray, $cachedData);
     }
 
-    // /**
-    //  * Test getting stock data when it is not found in cache or database.
-    //  */
-    // public function test_get_stock_not_found()
-    // {
-    //     $symbol = 'AAPL';
 
-    //     // Mock the cache to return null
-    //     Cache::shouldReceive('get')
-    //         ->once()
-    //         ->andReturn(null);
-
-    //     // Mock the database to return null
-    //     Quote::shouldReceive('where')
-    //         ->once()
-    //         ->with('symbol', $symbol)
-    //         ->andReturnSelf();
-    //     Quote::shouldReceive('latest')
-    //         ->once()
-    //         ->with('id')
-    //         ->andReturnSelf();
-    //     Quote::shouldReceive('first')
-    //         ->once()
-    //         ->andReturn(null);
-
-    //     $response = $this->get("/stock/$symbol");
-
-    //     $response->assertStatus(404)
-    //         ->assertJson(['error' => 'Stock not found']);
-    // }
 }
