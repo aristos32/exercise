@@ -26,8 +26,11 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 - Install composer dependencies  
 ``` $ docker-compose run --rm composer install ```
 
-- Set correct permissions and ownership, if any write errors 
+- If any permission errors errors like this occurs:  
+```The stream or file "/var/www/html/storage/logs/laravel.log" could not be opened in append mode: Failed to open stream: Permission denied The exception occurred while attempting to log```  
+then set correct permissions and ownership:  
 ``` $ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
+
 
 - install Laravel Sanctum for api  
 ```$ docker-compose exec app php artisan install:api```
@@ -56,7 +59,16 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 
 ### Documentation
 
-#### Dockerizition
+#### General
+I have registered for a free api key, which has limited amount of daily requests. It is provided above, to be added in the .env file.
+
+The most related endpoint I found was the Quote Endpoint api https://www.alphavantage.co/documentation/#latestprice, which returns the latest price and volume information for a selected ticker. But as it stated in the documentation:  
+```Tip: by default, the quote endpoint is updated at the end of each trading day for all users. If you would like to access realtime or 15-minute delayed stock quote data for the US market, please subscribe to a premium membership plan for your personal use. For commercial use, please contact sales.```  
+As such, we cannot have any meaningful percentage changes during the day, as all prices will be the same as the end of the previous day. A workaround can be to call our scheduler on daily basis, and so we will get the percentage change between 2 days. 
+
+However when we have a proper api, or a paid subsription, the architecture will apply, and with minimal changes on api, variable names, and database table columns, the reporting system will work fine.
+
+#### Dockerization
 All services were dockerized, using a combination of Dockerfile and docker-compose. I have used different ports for http and mysql than the default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
 
 #### Retrieve the data at regular intervals
@@ -93,6 +105,9 @@ Laravel has build-in support with PHPUnit. I have written both Unit tests and Fe
 To avoid accidental cases of modifying the database during testing we used the ```use RefreshDatabase; trait```, as well as an in-memory sqlite option of phpUnit.xml with below params:  
 ```<env name="DB_CONNECTION" value="sqlite"/>```  
 ```<env name="DB_DATABASE" value=":memory:"/>```
+
+### Bonus - user interface with latest stock price
+This can be implemented using websockets. Laravel has good support for this using a server-side broadcasting driver that broadcasts the events, and Laravel Echo(a frontend Javascript library) can receive them within the browser client. I didn't implement this part due to lack of time.
 
 ### Useful commands for troubleshooting
 - Run all tests  

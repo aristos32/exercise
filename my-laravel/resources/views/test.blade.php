@@ -19,6 +19,14 @@ echo "<pre>";
 print_r($data);
 echo "</pre>";
 
+// real time options
+$json = file_get_contents(env('ALPHA_VANTAGE_API_URL') . '?function=REALTIME_OPTIONS&symbol=IBM&&apikey=' . env('ALPHA_VANTAGE_API_KEY'));
+$data = json_decode($json, true);
+
+echo "<pre>";
+print_r($data);
+echo "</pre>";
+
 Log::debug('An informational message.');
 
 exit;

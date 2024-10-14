@@ -74,6 +74,8 @@ class CallAlphaVantageApi extends Command
                     return 3;
                 }
 
+                Log::debug('Data: ' . json_encode($data));
+
                 // check if data is valid
                 if (!isset($data['Global Quote']) || !isset($data['Global Quote']['01. symbol'])) {
                     $this->error('Invalid data received');

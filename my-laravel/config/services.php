@@ -38,7 +38,7 @@ return [
         'api_url' => env('ALPHA_VANTAGE_API_URL'),
         'api_key' => env('ALPHA_VANTAGE_API_KEY'),
         'cache_duration' => env('REDIS_CACHE_DURATION'),
-        'stocks' => ['AAPL', 'IBM'],
+        'stocks' => ['AAPL'],
         // ['IBM', 'NVDA', 'TLSA', 'AMZN', 'AAPL', 'MSFT', 'AMD', 'GOOG', 'META', 'JPM'],
     ],
 
