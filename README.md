@@ -57,12 +57,12 @@ ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ### Documentation
 
 #### Dockerizition
-All services will be dockerized, using a combination of Dockerfile and docker-compose. I will use different ports for http and mysql than the default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
+All services were dockerized, using a combination of Dockerfile and docker-compose. I have used different ports for http and mysql than the default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
 
 #### Retrieve the data at regular intervals
-We are asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new command/CallAlphaVantageApi and used the command schedule in routes/console.php to run it in intervals. I think the command scheduler is a very nice high level alternative of the traditional linux cron jobs, and also the commands can be under source control, which will help us avoid mistakes on server setup.
+It was asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new command/CallAlphaVantageApi and used the command schedule in routes/console.php to run it in intervals. I think the command scheduler is a very nice high level alternative of the traditional linux cron jobs, and also the commands can be under source control, which will help us avoid mistakes on server setup.
 
-The ```/Console/Commands/CallAlphaVantageApi.php``` in performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urs, for http return status code, for any 'Information' in response which usually is about rate limits being reached, and for actual quote structure to be valid before doing any processing.
+The ```/Console/Commands/CallAlphaVantageApi.php``` is performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urls, for http return status code, for any 'Information' in response which indicates usually rate limits being reached, and for actual quote structure to be valid before doing any processing, which might be related to api internal errors.
 
 #### Endpoint to fetch the latest stock price
 This is the quote as we received it from the AlphaVantage Api, without any processing yet.
@@ -76,20 +76,23 @@ Considering that we may have very frequent inserts of data, the table can grow v
 
 Now we have 10 stocks, but this number can grow to much more. As a result I'm using the Laravel feature of batch insert the data, to minimize database transactions.
 
-As the database grows we can consider archiving old data, that are no longer needed for real-time processing 
+As the database grows we can consider archiving old data, that are no longer needed for real-time processing. Another option can be database sharding, and accessing the appropriate shard using application logic. 
 
 #### Caching - Redis
-We are also asked to implement caching to store the latest stock price. We can implement in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many.
+It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to batch it in the initial stages of a new project.
 
 #### Testing - debugging
 For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
-Laravel has build-in support with PHPUnit. We will write both Unit tests and Feature tests for our application. Testing coverage included:
+Laravel has build-in support with PHPUnit. I have written both Unit tests and Feature tests for our application. Testing coverage included:
 1. manual testing during development
 2. unit tests added in tests/unit
 3. feature tests added in tests/
 4. database tests are tested as part of feature testing
 5. redis cache tests are tested as part of feature testing
 
+To avoid accidental cases of modifying the database during testing we used the ```use RefreshDatabase; trait```, as well as an in-memory sqlite option of phpUnit.xml with below params:  
+```<env name="DB_CONNECTION" value="sqlite"/>```  
+```<env name="DB_DATABASE" value=":memory:"/>```
 
 ### Useful commands for troubleshooting
 - Run all tests  

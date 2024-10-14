@@ -45,11 +45,14 @@ class CallAlphaVantageApiTest extends TestCase
         });
 
         // Mock the Cache facade for the 'put' method
+        // use Mockery to match only part of the data
         Cache::shouldReceive('put')
             ->with(
                 'stock:AAPL',
                 \Mockery::on(function ($data) {
-                    return is_array($data) && isset($data['symbol']) && $data['symbol'] === 'AAPL';
+                    return is_array($data) &&
+                        isset($data['symbol']) && $data['symbol'] === 'AAPL' &&
+                        isset($data['price']) && $data['price'] == 151;
                 }),
                 \Mockery::any()  // The TTL can be any value
             );
@@ -87,10 +90,11 @@ class CallAlphaVantageApiTest extends TestCase
      */
     public function test_handle_api_failure()
     {
-        Log::debug("\n\n" . __METHOD__ . "\n\n");
         // Mock a failed API response
         Http::fake([
-            "{$this->apiUrl}*" => Http::response(null, 500)
+            "{$this->apiUrl}*" => Http::response([
+                null
+            ], 500)
         ]);
 
         // Call the command
