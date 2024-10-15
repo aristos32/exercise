@@ -91,6 +91,9 @@ Now we have 10 stocks, but this number can grow to much more. As a result I'm us
 
 As the database grows we can consider archiving old data, that are no longer needed for real-time processing. Another option can be database sharding, and accessing the appropriate shard using application logic. An appropriate field for sharding is ```latest_trading_day```.
 
+Another possible database optimization would be to retrieve only specific attributes, like in getLatestStockPrice action. This can reduce the bandwidth usage, especially for large datasets. Here however it will not make any significant improvement. Example:  
+```http://127.0.0.1:8082/api/stock/get/AAPL```
+
 #### Caching - Redis
 It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to batch it in the initial stages of a new project.
 

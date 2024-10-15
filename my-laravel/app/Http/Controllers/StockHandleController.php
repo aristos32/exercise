@@ -27,15 +27,14 @@ class StockHandleController extends Controller
         }
 
         // if not found in cache, get latest quote from database
-        $quote = Quote::where('symbol', $symbol)->latest('id')->first();
+        $quote = Quote::select('symbol', 'open', 'high', 'low', 'price', 'volume', 'latest_trading_day', 'previous_close', 'change', 'change_percent')->where('symbol', $symbol)->latest('id')->first();
         if ($quote) {
+
             // Convert the model to an array with only relevant fields
-            $quoteData = $quote->only(['id', 'symbol', 'open', 'high', 'low', 'price', 'volume', 'latest_trading_day', 'previous_close', 'change', 'change_percent', 'created_at', 'updated_at']);
+            $quoteData = $quote->only(['symbol', 'open', 'high', 'low', 'price', 'volume', 'latest_trading_day', 'previous_close', 'change', 'change_percent']);
 
             // Format the created_at and updated_at fields
             $quoteData['latest_trading_day'] = $quote->latest_trading_day->format('Y-m-d');
-            $quoteData['created_at'] = $quote->created_at->format('Y-m-d H:i:s');
-            $quoteData['updated_at'] = $quote->updated_at->format('Y-m-d H:i:s');
 
             // store data in redis cache
             Cache::put($cacheKey, $quoteData, 60);

@@ -69,6 +69,11 @@ class StockHandleControllerTest extends TestCase
             'change_percent' => '-3.75%',
         ]);
 
+        // unset the fields that are not expected in the response
+        unset($quote->created_at);
+        unset($quote->updated_at);
+        unset($quote->id);
+
         $response = $this->get("/api/stock/get/$symbol");
 
         $response->assertStatus(200)
