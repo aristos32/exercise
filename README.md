@@ -1,9 +1,11 @@
 ### Initial Setup
-
+- clore repository:  
+```$ git clone  git@github.com:aristos32/exercise.git```  
+```$ cd exercise```
 - create .env file  
-```cp my-laravel/.env.example my-laravel/.env```
+```$ cp my-laravel/.env.example my-laravel/.env```
 
-- update these database variable to match the ones in the docker-compose  
+- In the .env, update these variables to match the ones in the docker-compose  
 ```
 # db
 DB_CONNECTION=mysql
@@ -19,18 +21,17 @@ REDIS_PASSWORD=null
 REDIS_PORT=6379
 REDIS_CACHE_DURATION=60
 
-# other vars
+# add these vars
 ALPHA_VANTAGE_API_URL=https://www.alphavantage.co/query
 ALPHA_VANTAGE_API_KEY=I96SA21INZCRDLAR
 ```
 - Install composer dependencies  
 ``` $ docker-compose run --rm composer install ```
 
-- If any permission errors errors like this occurs:  
+- If any permission errors like this occurs:  
 ```The stream or file "/var/www/html/storage/logs/laravel.log" could not be opened in append mode: Failed to open stream: Permission denied The exception occurred while attempting to log```  
 then set correct permissions and ownership:  
 ``` $ docker-compose exec app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && docker-compose exec app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache```
-
 
 - install Laravel Sanctum for api  
 ```$ docker-compose exec app php artisan install:api```
@@ -38,29 +39,52 @@ then set correct permissions and ownership:
 - build and start all docker services
 ```$ docker-compose up -d --build```
 
-- start all docker services  
-```$ docker-compose up -d ```
-
 - verify that all services are up  
 ```$ docker-compose ps```
+
+- Run migrations  
+```$ docker-compose exec app php artisan migrate```
+
+- Generate Laravel application encryption key  
+```$ docker-compose exec app php artisan key:generate```
 
 - start the scheduler  
 ```$ docker-compose exec app php artisan schedule:work```
 
 ### Test that the application is running
+#### Apis  
 ```http://127.0.0.1:8082/```  
 ```http://127.0.0.1:8082/test```  
-```http://127.0.0.1:8082/redis-test```
+```http://127.0.0.1:8082/redis-test```  
 ```http://127.0.0.1:8082/api/stock/get/AAPL```
 ```http://127.0.0.1:8082/api/stock/report/AAPL```
-```http://127.0.0.1:8082/api/stock/report```
-```$ curl http://127.0.0.1:8082/api/stock/IBM```
+```http://127.0.0.1:8082/api/stock/report```  
+```$ curl http://127.0.0.1:8082/api/stock/get/IBM```
 
+
+#### Logs
+```$ tail -f my-laravel/storage/logs/laravel.log```
+
+#### Redis CLI connect
+```$ docker-compose exec redis redis-cli```  
+-- KEYS * (see all keys)  
+-- GET key_name  
+-- DEL key_name
+
+#### Database Connect
+Connect to the database from the host machine  
+```$ mysql -h 127.0.0.1 -P 3308 -u laravel -p```
+
+#### Run all tests  
+```$ docker-compose exec app php artisan test```
+
+#### Call Alpha Vantage API command manually  
+```$ docker-compose exec app php artisan app:call-alpha-vantage-api```
 
 ### Documentation
 
 #### General
-I have registered for a free api key, which has limited amount of daily requests. It is provided above, to be added in the .env file.
+I have registered in Alpha Vantage for a free api key, which has limited amount of daily requests. It is provided above, to be added in the .env file as variable ALPHA_VANTAGE_API_KEY.
 
 The most related endpoint I found was the Quote Endpoint api https://www.alphavantage.co/documentation/#latestprice, which returns the latest price and volume information for a selected ticker. But as it stated in the documentation:  
 ```Tip: by default, the quote endpoint is updated at the end of each trading day for all users. If you would like to access realtime or 15-minute delayed stock quote data for the US market, please subscribe to a premium membership plan for your personal use. For commercial use, please contact sales.```  
@@ -79,7 +103,7 @@ The ```/Console/Commands/CallAlphaVantageApi.php``` is performing various error 
 #### Endpoint to fetch the latest stock price
 This is the quote as we received it from the AlphaVantage Api, without any processing yet.
 To get the latest stock price from the cache I implemented api /stock/get/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
-```curl http://127.0.0.1:8082/api/stock/get/IBM``` OR  
+```$ curl http://127.0.0.1:8082/api/stock/get/IBM``` OR  
 ```http://127.0.0.1:8082/api/stock/get/AAPL```
 
 #### Database Design
@@ -98,7 +122,7 @@ Another possible database optimization would be to retrieve only specific attrib
 It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to batch it in the initial stages of a new project.
 
 The idea of using a cache like this, is the same as in computer processors. 
-- If we need to find some data, we first look the cache(RAM). This is very fast, as is in-memory.
+- If we need to find some data, we first look the cache(RAM). This is very fast, as it is in-memory.
 - If data are found, we use them, thus reducing signifigantly the calls to the database(disk). The difference can be some orders of magnitude.
 - if not found, we get the data from the database, but also update the cache for subsequent retrievals.  
 
@@ -120,32 +144,3 @@ To avoid accidental cases of modifying the database during testing we used the `
 ### Bonus - user interface with latest stock price
 This can be implemented using websockets. Laravel has good support for this using a server-side broadcasting driver that broadcasts the events, and Laravel Echo(a frontend Javascript library) can receive them within the browser client. I didn't implement this part due to lack of time.
 
-### Useful commands for troubleshooting
-- Run all tests  
-```$ docker-compose exec app php artisan test```
-
-- Test-connect to the database from the host machine  
-```mysql -h 127.0.0.1 -P 3308 -u laravel -p```
-
-- Run command manually  
-```$ docker-compose exec app php artisan app:call-alpha-vantage-api```
-
-- Clear config cache - in case .env variable are not accessible  
-```docker-compose exec app php artisan config:clear&&docker-compose exec app php artisan cache:clear``` 
-
-- Ensure that the docker-compose.yml file is correct  
-```docker-compose config```
-
-- access redis  
-```docker-compose exec redis redis-cli```  
--- KEYS * (see all keys)  
--- GET key_name  
-
-- Check if Laravel is reading env variables  
-```docker-compose exec app php artisan tinker```  
-```$ env('APP_NAME');```
-
-- ```$ docker --version```  
-Docker version 26.1.4, build 5650f9b
--  ```docker-compose --version```  
-docker-compose version 1.29.2, build unknown

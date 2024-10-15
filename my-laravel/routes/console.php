@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->everySecond();
 
 
-Schedule::command('app:call-alpha-vantage-api')->everySecond();
+Schedule::command('app:call-alpha-vantage-api')->everyMinute();
