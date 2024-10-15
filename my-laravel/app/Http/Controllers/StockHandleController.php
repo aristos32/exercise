@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Cache;
 
 class StockHandleController extends Controller
 {
+    /**
+     * get latest stock price as taken from Alpha Vantage API, no processing done
+     * @param mixed $symbol
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
     public function getLatestStockPrice($symbol)
     {
         // get stock price from cache

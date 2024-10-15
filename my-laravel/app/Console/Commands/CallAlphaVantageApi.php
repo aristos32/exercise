@@ -117,14 +117,11 @@ class CallAlphaVantageApi extends Command
         }
 
         // batch insert data
-        //var_dump($allStocks);
         if (count($allStocks) > 0) {
-            // insert data in database
             Quote::insert($allStocks);
 
             $this->info('Storing data in database');
             Log::debug('Storing data in database');
-
         }
 
         Log::debug("-------------END JOB PROCESSING-----------------\n\n");

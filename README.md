@@ -84,14 +84,22 @@ To get the latest stock price from the cache I implemented api /stock/get/{symbo
 
 #### Database Design
 For storing the data I defined table Quotes. 
-Considering that we may have very frequent inserts of data, the table can grow very big, making retrieval slow. To optimize it for efficient retrieval of stock data, I have added an index on 'symbol' attribute.
+Considering that we may have very frequent inserts of data, the table can grow very big, making retrieval slow. To optimize it for efficient retrieval of stock data, I have added an index on 'symbol' attribute. Now we retrieve data for specific symbol, and from these the latest by id(which is already indexed as a primary key) so this will be fast. Another possible index can be latest_trading_day, but I don't believe it is needed under current specifications. Also we limit the data to latest, which is more network efficient. Example of optimized query:  
+```$quote = Quote::where('symbol', $symbol)->latest('id')->first();```
 
-Now we have 10 stocks, but this number can grow to much more. As a result I'm using the Laravel feature of batch insert the data, to minimize database transactions.
+Now we have 10 stocks, but this number can grow to much more. As a result I'm using the Laravel feature of batch insert the data, to minimize database transactions, thus optimizing storing.
 
-As the database grows we can consider archiving old data, that are no longer needed for real-time processing. Another option can be database sharding, and accessing the appropriate shard using application logic. 
+As the database grows we can consider archiving old data, that are no longer needed for real-time processing. Another option can be database sharding, and accessing the appropriate shard using application logic. An appropriate field for sharding is ```latest_trading_day```.
 
 #### Caching - Redis
 It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to batch it in the initial stages of a new project.
+
+The idea of using a cache like this, is the same as in computer processors. 
+- If we need to find some data, we first look the cache(RAM). This is very fast, as is in-memory.
+- If data are found, we use them, thus reducing signifigantly the calls to the database(disk). The difference can be some orders of magnitude.
+- if not found, we get the data from the database, but also update the cache for subsequent retrievals.  
+
+There are various algorithms that invalidate cache, and get fresh data from the database.
 
 #### Testing - debugging
 For better debugging I have added both console logs and file log messages. Serious issues as marked as 'error' to draw our attention.
