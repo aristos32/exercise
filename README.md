@@ -51,15 +51,15 @@ then set correct permissions and ownership:
 - start the scheduler  
 ```$ docker-compose exec app php artisan schedule:work```
 
-### Test that the application is running
-#### Apis  
+### Testing
+#### Check if application is running  
 ```http://127.0.0.1:8082/```  
 ```http://127.0.0.1:8082/test```  
 ```http://127.0.0.1:8082/redis-test```  
-```http://127.0.0.1:8082/api/stock/get/AAPL```
-```http://127.0.0.1:8082/api/stock/report/AAPL```
+```http://127.0.0.1:8082/api/stock/get/AAPL```  
+```http://127.0.0.1:8082/api/stock/report/AAPL```  
 ```http://127.0.0.1:8082/api/stock/report```  
-```$ curl http://127.0.0.1:8082/api/stock/get/IBM```
+```$ curl http://127.0.0.1:8082/api/stock/get/IBM```  
 
 
 #### Logs
@@ -87,7 +87,8 @@ Connect to the database from the host machine
 I have registered in Alpha Vantage for a free api key, which has limited amount of daily requests. It is provided above, to be added in the .env file as variable ALPHA_VANTAGE_API_KEY.
 
 The most related endpoint I found was the Quote Endpoint api https://www.alphavantage.co/documentation/#latestprice, which returns the latest price and volume information for a selected ticker. But as it stated in the documentation:  
-```Tip: by default, the quote endpoint is updated at the end of each trading day for all users. If you would like to access realtime or 15-minute delayed stock quote data for the US market, please subscribe to a premium membership plan for your personal use. For commercial use, please contact sales.```  
+>Tip: by default, the quote endpoint is updated at the end of each trading day for all users. If you would like to access realtime or 15-minute delayed stock quote data for the US market, please subscribe to a premium membership plan for your personal use. For commercial use, please contact sales.
+
 As such, we cannot have any meaningful percentage changes during the day, as all prices will be the same as the end of the previous day. A workaround can be to call our scheduler on daily basis, and so we will get the percentage change between 2 days. 
 
 However when we have a proper api, or a paid subsription, the architecture will apply, and with minimal changes on api, variable names, and database table columns, the reporting system will work fine.
@@ -96,15 +97,24 @@ However when we have a proper api, or a paid subsription, the architecture will 
 All services were dockerized, using a combination of Dockerfile and docker-compose. I have used different ports for http and mysql than the default, to avoid conflicts with existing host services. The main reasoning for using docker is to have a uniform deployment of the project in any machine or OS.
 
 #### Retrieve the data at regular intervals
-It was asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new command/CallAlphaVantageApi and used the command schedule in routes/console.php to run it in intervals. I think the command scheduler is a very nice high level alternative of the traditional linux cron jobs, and also the commands can be under source control, which will help us avoid mistakes on server setup.
+It was asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new ```/Console/Commands/CallAlphaVantageApi``` and used the command scheduler in ```routes/console.php``` to run it in intervals. I think that Laravel command scheduler is a very nice high level alternative of the traditional linux cron jobs. These commands can be under source control, which will help us avoid mistakes on server setup.
 
-The ```/Console/Commands/CallAlphaVantageApi.php``` is performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urls, for http return status code, for any 'Information' in response which indicates usually rate limits being reached, and for actual quote structure to be valid before doing any processing, which might be related to api internal errors.
+The new command is performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urls, for http return status code, for any 'Information' in response which indicates usually rate limits being reached, and for actual quote structure to be valid which might be related to api internal errors, before doing any data processing and storing.
 
 #### Endpoint to fetch the latest stock price
 This is the quote as we received it from the AlphaVantage Api, without any processing yet.
 To get the latest stock price from the cache I implemented api /stock/get/{symbol}. This has a fallback to retrieve the data from the database, if for any reason they are not in cache( maybe expired already). In such case, the data is inserted in the cache. We can unit test the api using:  
 ```$ curl http://127.0.0.1:8082/api/stock/get/IBM``` OR  
 ```http://127.0.0.1:8082/api/stock/get/AAPL```
+
+#### Real Time Reporting endpoints
+These apis allow users to view real-time stock prices and percenate formulas. These data are not stored in the database, as they are based on Quotes table, and can be recalculated at any time.
+
+ The first api is retrieving data for specific symbol, using action ``getRealTimeStockReportForSymbol```. The idea is to try first the Redis cache, and only if data are not found, then to search in the database.
+```http://127.0.0.1:8082/api/stock/report/AAPL```  
+
+The second api is returing the latest real-time stock prices for all available symbols in our Quotes table, using action ```getRealTimeStockReportAll```. Further optimization is possible here, to get data using a single ORM query, and also getting all keys from Redis with single transaction. But since we need to process each key in Redis and database, I chose to simply reused existing action ```getRealTimeStockReportForSymbol```.  
+```http://127.0.0.1:8082/api/stock/report```  
 
 #### Database Design
 For storing the data I defined table Quotes. 
@@ -115,11 +125,11 @@ Now we have 10 stocks, but this number can grow to much more. As a result I'm us
 
 As the database grows we can consider archiving old data, that are no longer needed for real-time processing. Another option can be database sharding, and accessing the appropriate shard using application logic. An appropriate field for sharding is ```latest_trading_day```.
 
-Another possible database optimization would be to retrieve only specific attributes, like in getLatestStockPrice action. This can reduce the bandwidth usage, especially for large datasets. Here however it will not make any significant improvement. Example:  
+Another possible database optimization would be to retrieve only specific attributes, like in ```getLatestStockPrice``` action. This can reduce the bandwidth usage, especially for large datasets. Here however it will not make any significant improvement. Example:  
 ```http://127.0.0.1:8082/api/stock/get/AAPL```
 
 #### Caching - Redis
-It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to batch it in the initial stages of a new project.
+It was also asked to implement caching to store the latest stock price. I implemented in-memory caching using Redis, which integrates well with Laravel. In the future, we can also consider batch inserts in Redis, using pipelines if stocks become too many. However this was not implemented as I consider a round trip to Redis not as costly as a database round-trip in order to need it in the initial stages of a new project.
 
 The idea of using a cache like this, is the same as in computer processors. 
 - If we need to find some data, we first look the cache(RAM). This is very fast, as it is in-memory.
@@ -134,10 +144,11 @@ Laravel has build-in support with PHPUnit. I have written both Unit tests and Fe
 1. manual testing during development
 2. unit tests added in tests/unit
 3. feature tests added in tests/
-4. database tests are tested as part of feature testing
-5. redis cache tests are tested as part of feature testing
+4. api tests are tested as part of feature testing using Http mocks.
+5. database tests are tested as part of feature testing using in memory sqlite database.
+5. redis cache tests are tested as part of feature testing using Cache mocks.
 
-To avoid accidental cases of modifying the database during testing we used the ```use RefreshDatabase; trait```, as well as an in-memory sqlite option of phpUnit.xml with below params:  
+To avoid accidental cases of modifying the database during testing I used the ```use RefreshDatabase; trait```, as well as an in-memory sqlite option of ```phpUnit.xml``` with below params:  
 ```<env name="DB_CONNECTION" value="sqlite"/>```  
 ```<env name="DB_DATABASE" value=":memory:"/>```
 
