@@ -104,7 +104,7 @@ class CallAlphaVantageApi extends Command
 
                 $allStocks[$quoteData['symbol']] = $quoteData;
 
-                Cache::put("stock:{$quoteData['symbol']}", $quoteData, $redisCacheDuration);
+                Cache::store('redis')->put("stock:{$quoteData['symbol']}", $quoteData, $redisCacheDuration);
 
                 $this->info("Data stored in Redis cache");
                 Log::debug("Data stored in Redis cache");

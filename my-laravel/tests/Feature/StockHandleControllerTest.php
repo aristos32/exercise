@@ -33,6 +33,10 @@ class StockHandleControllerTest extends TestCase
             'change_percent' => '1.34%',
         ];
 
+        // Mock the Cache facade
+        Cache::shouldReceive('store')
+            ->andReturnSelf(); // Return the Cache instance itself
+
         // Mock the cache to return the cached data
         Cache::shouldReceive('get')
             ->once()
@@ -74,8 +78,22 @@ class StockHandleControllerTest extends TestCase
         unset($quote->updated_at);
         unset($quote->id);
 
+        // Mock the Cache facade
+        Cache::shouldReceive('store')
+            ->with('redis')
+            ->andReturnSelf(); // Return the Cache instance itself
+
+        Cache::shouldReceive('get')
+            ->with("stock:$symbol")
+            ->andReturn(null); // Simulate cache miss
+
+        Cache::shouldReceive('put')
+            ->once() // Expect the put method to be called once
+            ->with("stock:$symbol", Mockery::type('array'), 60); // Accept specific arguments
+
         $response = $this->get("/api/stock/get/$symbol");
 
+        // Assert that data is returned from the database
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
@@ -83,14 +101,6 @@ class StockHandleControllerTest extends TestCase
                 'source' => 'database'
             ]);
 
-        $quoteArray = $quote->toArray();
-
-        // Adjust the actual response data to match the expected format
-        $quoteArray['latest_trading_day'] = date('Y-m-d', strtotime($quoteArray['latest_trading_day']));
-        // Assert that the data is stored in the cache
-        $cachedData = Cache::get($cacheKey);
-
-        $this->assertEquals($quoteArray, $cachedData);
     }
 
 

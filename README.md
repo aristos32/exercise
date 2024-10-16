@@ -16,6 +16,7 @@ DB_USERNAME=laravel
 DB_PASSWORD=password
 
 # redis
+REDIS_CLIENT=phpredis
 REDIS_HOST=redis
 REDIS_PASSWORD=null
 REDIS_PORT=6379
@@ -100,6 +101,9 @@ All services were dockerized, using a combination of Dockerfile and docker-compo
 It was asked to implement an automated mechanism to fetch the stock price data at regular intervals (e.g: every 1 minute). For this reason I create a new ```/Console/Commands/CallAlphaVantageApi``` and used the command scheduler in ```routes/console.php``` to run it in intervals. I think that Laravel command scheduler is a very nice high level alternative of the traditional linux cron jobs. These commands can be under source control, which will help us avoid mistakes on server setup.
 
 The new command is performing various error handling, due to many issues that may come up on consuming a third party api. I check in turn for any networking issues or invalid urls, for http return status code, for any 'Information' in response which indicates usually rate limits being reached, and for actual quote structure to be valid which might be related to api internal errors, before doing any data processing and storing.
+
+The stocks to be retrieved are set as config params in config/services.php:  
+```['IBM', 'NVDA', 'TLSA', 'AMZN', 'AAPL', 'MSFT', 'AMD', 'GOOG', 'META', 'JPM']```
 
 #### Endpoint to fetch the latest stock price
 This is the quote as we received it from the AlphaVantage Api, without any processing yet.

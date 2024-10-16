@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quote;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class StockHandleController extends Controller
 {
@@ -16,9 +17,10 @@ class StockHandleController extends Controller
     {
         // get stock price from cache
         $cacheKey = "stock:$symbol";
-        $cachedData = Cache::get($cacheKey);
+        $cachedData = Cache::store('redis')->get($cacheKey);
 
         if ($cachedData) {
+            Log::info("Stock data for {$symbol} found in cache");
             return response()->json([
                 'status' => 'success',
                 'data' => $cachedData,
@@ -37,7 +39,9 @@ class StockHandleController extends Controller
             $quoteData['latest_trading_day'] = $quote->latest_trading_day->format('Y-m-d');
 
             // store data in redis cache
-            Cache::put($cacheKey, $quoteData, 60);
+            Cache::store('redis')->put($cacheKey, $quoteData, 60);
+
+            Log::info("Stock data for {$symbol} found in database, and stored in cache");
             return response()->json([
                 'status' => 'success',
                 'data' => $quote,

@@ -44,6 +44,10 @@ class CallAlphaVantageApiTest extends TestCase
             return Http::response([ /* fake response */], 200);
         });
 
+        // Mock the Cache facade
+        Cache::shouldReceive('store')
+            ->andReturnSelf(); // Return the Cache instance itself
+
         // Mock the Cache facade for the 'put' method
         // use Mockery to match only part of the data
         Cache::shouldReceive('put')
@@ -81,7 +85,7 @@ class CallAlphaVantageApiTest extends TestCase
 
 
         // Assert that the data was cached in Redis
-        $cachedData = Cache::get('stock:AAPL');
+        $cachedData = Cache::store('redis')->get('stock:AAPL');
         $this->assertEquals(151.00, $cachedData['price']);
     }
 
