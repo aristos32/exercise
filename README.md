@@ -113,7 +113,7 @@ These apis allow users to view real-time stock prices and percenate formulas. Th
  The first api is retrieving data for specific symbol, using action ``getRealTimeStockReportForSymbol```. The idea is to try first the Redis cache, and only if data are not found, then to search in the database.
 ```http://127.0.0.1:8082/api/stock/report/AAPL```  
 
-The second api is returing the latest real-time stock prices for all available symbols in our Quotes table, using action ```getRealTimeStockReportAll```. Further optimization is possible here, to get data using a single ORM query, and also getting all keys from Redis with single transaction. But since we need to process each key in Redis and database, I chose to simply reused existing action ```getRealTimeStockReportForSymbol```.  
+The second api is returing the latest real-time stock prices for all available symbols in our Quotes table, using action ```getRealTimeStockReportAll```. Further optimization is possible here, to get data using a single ORM query, and also getting all keys from Redis with single transaction. But since we need to process each key in Redis and database, I chose to simply reuse existing action ```getRealTimeStockReportForSymbol```, thus having simpler code.  
 ```http://127.0.0.1:8082/api/stock/report```  
 
 #### Database Design
